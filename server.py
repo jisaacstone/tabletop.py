@@ -1,66 +1,57 @@
 # -*- coding: utf-8 -*-
-
+"""
+    Simple sockjs-tornado chat application. By default will listen on port 8080
+"""
 import tornado.ioloop
 import tornado.web
-import os
 
-from sockjs.tornado import SockJSConnection, SockJSRouter
-from multiplex import MultiplexConnection
+import sockjs.tornado
+from game import BlackJack
 
 
-# Index page handler
 class IndexHandler(tornado.web.RequestHandler):
     """Regular HTTP handler to serve the chatroom page"""
     def get(self):
         self.render('index.html')
 
 
-# multiplex.js static handler
-class MultiplexStaticHandler(tornado.web.RequestHandler):
-    dir = "static"
+class ChatConnection(sockjs.tornado.SockJSConnection):
+    """Chat connection implementation"""
+    # Class level variable
+    participants = set()
 
-    def get(self, file_name):
-        self.render(os.path.join(self.dir, file_name))
-
-
-# Connections
-class AnnConnection(SockJSConnection):
     def on_open(self, info):
-        self.send('Ann says hi!!')
+        # Send that someone joined
+        self.broadcast(self.participants, "Someone joined.")
+
+        # Add client to the clients list
+        self.participants.add(self)
 
     def on_message(self, message):
-        self.send('Ann nods: ' + message)
+        # Broadcast message
+        self.broadcast(self.participants, message)
 
+    def on_close(self):
+        # Remove client from the clients list and broadcast leave message
+        self.participants.remove(self)
 
-class BobConnection(SockJSConnection):
-    def on_open(self, info):
-        self.send('Bob doesn\'t agree.')
-
-    def on_message(self, message):
-        self.send('Bob says no to: ' + message)
-
-
-class CarlConnection(SockJSConnection):
-    def on_open(self, info):
-        self.send('Carl says goodbye!')
-
-        self.close()
+        self.broadcast(self.participants, "Someone left.")
 
 if __name__ == "__main__":
     import logging
     logging.getLogger().setLevel(logging.DEBUG)
 
-    # Create multiplexer
-    router = MultiplexConnection.get(ann=AnnConnection, bob=BobConnection, carl=CarlConnection)
+    # 1. Create chat router
+    ChatRouter = sockjs.tornado.SockJSRouter(ChatConnection, '/chat')
+    GameRouter = sockjs.tornado.SockJSRouter(BlackJack, '/game')
 
-    # Register multiplexer
-    EchoRouter = SockJSRouter(router, '/echo')
+    # 2. Create Tornado application
+    app = tornado.web.Application(
+            [(r"/", IndexHandler)] + ChatRouter.urls + GameRouter.urls
+    )
 
-    # Create application
-    app = tornado.web.Application([
-        (r"/", IndexHandler), 
-        (r"/static/(.*)", MultiplexStaticHandler)
-    ] + EchoRouter.urls)
+    # 3. Make Tornado app listen on port 8080
     app.listen(8080)
 
+    # 4. Start IOLoop
     tornado.ioloop.IOLoop.instance().start()

@@ -22,6 +22,14 @@ class Card(Item):
     def __repr__(self):
         return "{0.value} of {0.suit}".format(self)
 
+    def __eq__(self, other):
+        return (type(other) is type(self)
+                and other.value == self.value
+                and other.suit == self.suit)
+
+    def __ne__(self, other):    
+        return not self.__eq__(other)
+
 
 class Area(object):
     image = ""
@@ -55,7 +63,7 @@ def deal(deck, players, cards="all"):
 
 def new_poker_deck(jokers=False):
     suits = ["hearts", "diamonds", "clubs", "spades"]
-    values = range(2, 11) + ["J", "Q", "K", "A"]
+    values = map(str, range(2, 11)) + ["J", "Q", "K", "A"]
     deck = [Card(v, s) for v, s in product(values, suits)]
     if jokers:
         deck += [Card("Joker", "grey"), Card("Joker", "colorful")]

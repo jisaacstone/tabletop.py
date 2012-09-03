@@ -34,6 +34,17 @@ class DummyHandler(base.BaseTransportMixin):
         return self.conn_info
 
 
+class Room(conn.SockJSConnection):
+    def on_open(self, info):
+        pass
+
+    def on_message(self, message):
+        pass
+
+    def on_close(self):
+        pass
+
+
 class MultiplexConnection(conn.SockJSConnection):
     channels = dict()
 

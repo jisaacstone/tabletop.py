@@ -1,96 +1,132 @@
-<!doctype html>
-<html><head>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
-    <script src="static/multiplex.js"></script>
-    <style>
-      .box {
-          width: 300px;
-          float: left;
-          margin: 0 20px 0 20px;
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
+  <script>
+    $(function() {
+      var conn = null;
+
+      function log(msg) {
+        var control = $('#log');
+        control.html(control.html() + msg + '<br/>');
+        control.scrollTop(control.scrollTop() + 1000);
       }
-      .box div, .box input {
-          border: 1px solid;
-          -moz-border-radius: 4px;
-          border-radius: 4px;
-          width: 100%;
-          padding: 0px;
-          margin: 5px;
-      }
-      .box div {
-          border-color: grey;
-          height: 300px;
-          overflow: auto;
-      }
-      .box input {
-          height: 30px;
-      }
-      h1 {
-          margin-left: 75px;
-      }
-      body {
-          background-color: #F0F0F0;
-          font-family: "Arial";
-      }
-    </style>
-<head><body lang="en">
-    <h1>SockJS Multiplex example</h1>
 
-    <div id="first" class="box">
-      <div></div>
-      <form><input autocomplete="off" value="Type here..."></input></form>
-    </div>
+      function connect() {
+        disconnect();
 
-    <div id="second" class="box">
-      <div></div>
-      <form><input autocomplete="off"></input></form>
-    </div>
+        var transports = $('#protocols input:checked').map(function(){
+            return $(this).attr('id');
+        }).get();
 
-    <div id="third" class="box">
-      <div></div>
-      <form><input autocomplete="off"></input></form>
-    </div>
+        conn = new SockJS('http://' + window.location.host + '/game', transports);
 
-    <script>
-        // Pipe - convenience wrapper to present data received from an
-        // object supporting WebSocket API in an html element. And the other
-        // direction: data typed into an input box shall be sent back.
-        var pipe = function(ws, el_name) {
-            var div  = $(el_name + ' div');
-            var inp  = $(el_name + ' input');
-            var form = $(el_name + ' form');
+        log('Connecting...');
 
-            var print = function(m, p) {
-                p = (p === undefined) ? '' : JSON.stringify(p);
-                div.append($("<code>").text(m + ' ' + p));
-                div.append($("<br>"));
-                div.scrollTop(div.scrollTop() + 10000);
-            };
-
-            ws.onopen    = function()  {print('[*] open', ws.protocol);};
-            ws.onmessage = function(e) {print('[.] message', e.data);};
-            ws.onclose   = function()  {print('[*] close');};
-
-            form.submit(function() {
-                print('[ ] sending', inp.val());
-                ws.send(inp.val());
-                inp.val('');
-                return false;
-            });
+        conn.onopen = function() {
+          log('Connected.');
+          update_ui();
         };
 
-        var sockjs_url = '/echo';
-        var sockjs = new SockJS(sockjs_url);
+        conn.onmessage = function(e) {
+          log('Received: ' + e.data);
+        };
 
-        var multiplexer = new MultiplexedWebSocket(sockjs);
-        var ann  = multiplexer.channel('ann');
-        var bob  = multiplexer.channel('bob');
-        var carl = multiplexer.channel('carl');
+        conn.onclose = function() {
+          log('Disconnected.');
+          conn = null;
+          update_ui();
+        };
+      }
 
-        pipe(ann,  '#first');
-        pipe(bob,  '#second');
-        pipe(carl, '#third');
+      function disconnect() {
+        if (conn != null) {
+          log('Disconnecting...');
 
-        $('#first input').focus();
-    </script>
-</body></html>
+          conn.close();
+          conn = null;
+
+          update_ui();
+        }
+      }
+
+      function update_ui() {
+        var msg = '';
+
+        if (conn == null || conn.readyState != SockJS.OPEN) {
+          $('#status').text('disconnected');
+          $('#connect').text('Connect');
+        } else {
+          $('#status').text('connected (' + conn.protocol + ')');
+          $('#connect').text('Disconnect');
+        }
+      }
+
+      $('#connect').click(function() {
+        if (conn == null) {
+          connect();
+        } else {
+          disconnect();
+        }
+
+        update_ui();
+        return false;
+      });
+
+      $('form').submit(function() {
+        var text = $('#text').val();
+        log('Sending: ' + text);
+        conn.send(text);
+        $('#text').val('').focus();
+        return false;
+      });
+    });
+</script>
+</head>
+<body>
+<h3>Chat!</h3>
+<div id="protocols" style="float: right">
+  <ul>
+    <li>
+      <input id="websocket" type="checkbox" value="websocket" checked="checked"></input>
+      <label for="websocket">websocket</label>
+    </li>
+    <li>
+      <input id="xhr-streaming" type="checkbox" value="xhr-streaming" checked="checked"></input>
+      <label for="xhr-streaming">xhr-streaming</label>
+    </li>
+    <li>
+      <input id="iframe-eventsource" type="checkbox" value="iframe-eventsource" checked="checked"></input>
+      <label for="iframe-eventsource">iframe-eventsource</label>
+    </li>
+    <li>
+      <input id="iframe-htmlfile" type="checkbox" value="iframe-htmlfile" checked="checked"></input>
+      <label for="iframe-htmlfile">iframe-htmlfile</label>
+    </li>
+    <li>
+      <input id="xhr-polling" type="checkbox" value="xhr-polling" checked="checked"></input>
+      <label for="xhr-polling">xhr-polling</label>
+    </li>
+    <li>
+      <input id="iframe-xhr-polling" type="checkbox" value="iframe-xhr-polling" checked="checked"></input>
+      <label for="iframe-xhr-polling">iframe-xhr-polling</label>
+    </li>
+    <li>
+      <input id="jsonp-polling" type="checkbox" value="jsonp-polling" checked="checked"></input>
+      <label for="jsonp-polling">jsonp-polling</label>
+    </li>
+  </ul>
+</div>
+
+<div>
+  <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
+</div>
+<div id="log" style="width: 60em; height: 20em; overflow:auto; border: 1px solid black">
+</div>
+<form id="chatform">
+  <input id="text" type="text" />
+  <input type="submit" />
+</form>
+</body>
+</html>
