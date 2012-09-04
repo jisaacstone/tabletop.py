@@ -20,16 +20,16 @@ def name_gen():
 def turn_action(action):
     @wraps(action)
     def action_wrapper(self, *args, **kwargs):
-        if self.whose_turn != self:
+        if self.game_vars['whose_turn'] != self:
             return self.invalid_action('not your turn')
 
         result = action(self, *args, **kwargs)
         if result is not False:
-            self.whose_turn = self.turn.next()
-            logger.info("{0}'s turn".format(self.whose_turn))
-            if self.whose_turn == self.starting_player:
-                self.round += 1
-                logger.info("round {0}".format(self.round))
+            next_player = self.game_vars['turn'].next()
+            next_player.init_turn()
+            logger.info("{0}'s turn".format(next_player))
+            if next_player == self.game_vars['starting_player']:
+                logger.info("round {0}".format(self.game_vars['round']))
                 self.init_round()
 
         return result
@@ -97,8 +97,8 @@ class GameConnection(SockJSConnection):
     def can_do(self, action):
         state = self.game_vars['state']
         return (state is "active"
-                or action in self.action_states.get("any", [])
-                or action in self.action_states.get(state, []))
+            or action in self.game_vars['action_states'].get("any", [])
+            or action in self.game_vars['action_states'].get(state, []))
 
     def invalid_action(self, action):
         self.send("Invailid action {0} by player {1}".format(
@@ -144,7 +144,8 @@ class GameConnection(SockJSConnection):
 class TurnBasedGame(GameConnection):
     draw_pile = new_poker_deck()
 
-    def init_game(self):
+    def __init__(self, *args, **kwargs):
+        super(TurnBasedGame, self).__init__(*args, **kwargs)
         new_vars = dict(max_players=4,
                         whose_turn=False,
                         turn=[],
@@ -153,12 +154,13 @@ class TurnBasedGame(GameConnection):
                         )
         self.game_vars.update(new_vars)
 
+    def init_game(self):
         logger.info([id(p) for p in self.players])
         self.broadcast(self.players, "Game Started")
         self.game_vars['turn'] = itertools.cycle(self.players)
         self.game_vars['whose_turn'] = self.game_vars['turn'].next()
         self.game_vars['starting_player'] = self.game_vars['whose_turn']
-        return self.state
+        return self.game_vars['state']
 
     def init_player(self):
         logger.info("init player {0}".format(id(self)))
@@ -167,7 +169,13 @@ class TurnBasedGame(GameConnection):
                        "Player {0} Joined Game".format(self))
 
     def init_round(self):
-        pass
+        self.game_vars['round'] += 1
+        self.broadcast(self.participants,
+                       "round {0}".format(self.game_vars['round']))
+
+    def init_turn(self):
+        self.broadcast(self.participants, "{0}'s turn.".format(self.name))
+        self.game_vars['whose_turn'] = self
 
     def shuffle(self):
         shuffle(self.draw_pile)
@@ -232,42 +240,59 @@ def hand_value(cards):
     if not cards:
         return 0
 
-    card = cards.pop()
+    card = cards[0]
     if card.value.isdigit():
-        return int(card.value) + hand_value(cards)
+        return int(card.value) + hand_value(cards[1:])
     elif card.value in ['J', 'Q', 'K']:
-        return 10 + hand_value(cards)
+        return 10 + hand_value(cards[1:])
     elif card.value == 'A':
-        return max_under_21(11 + hand_value(cards),
-                            1 + hand_value(cards))
+        return max_under_21(11 + hand_value(cards[1:]),
+                            1 + hand_value(cards[1:]))
+
+
+turn_message = """Your turn
+You have {0} coins
+Your current bet is {1} coins"""
 
 
 class BlackJack(TurnBasedGame):
 
     def init_game(self):
+        super(BlackJack, self).init_game()
         self.deal(2)
         self.game_vars['dealer_hand'] = [self.draw_pile.pop()]
-        super(BlackJack, self).init_game()
 
     def init_player(self):
-        self.coins = 50
-        self.bet = 0
         super(BlackJack, self).init_player()
+        self.coins = 50
+        self.bet = 5
 
     def init_round(self):
-        while hand_value(self.dealer_hand) < 16:
+        super(BlackJack, self).init_round()
+        while hand_value(self.game_vars['dealer_hand']) < 16:
             self.game_vars['dealer_hand'].append(self.draw_pile.pop())
             logger.info(self.game_vars['dealer_hand'])
 
         dhv = hand_value(self.game_vars['dealer_hand'])
+        self.broadcast(self.players, 'dealer got {0}'.format(dhv))
         for player in self.players:
             phv = hand_value(player.hand)
             if phv > 21 or (phv < dhv and dhv <= 21):
-                player.coins += player.bet
-                player.send("you win {0}".format(player.bet))
-            else:
                 player.coins -= player.bet
                 player.send('you lose {0}'.format(player.bet))
+            else:
+                player.coins += player.bet
+                player.send("you win {0}".format(player.bet))
+            self.draw_pile += player.hand
+            player.hand = []
+
+        self.shuffle
+        self.deal(2)
+        self.game_vars['dealer_hand'] = [self.draw_pile.pop()]
+
+    def init_turn(self):
+        super(BlackJack, self).init_turn()
+        self.send(turn_message.format(self.coins, self.bet))
 
     @turn_action
     def action_bet(self, amount):
