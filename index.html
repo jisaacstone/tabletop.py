@@ -2,10 +2,13 @@
 <html>
 <head>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-  <script src="http://cdn.sockjs.org/sockjs-0.3.min.js"></script>
+  <script src="http://cdn.sockjs.org/sockjs-0.3.js"></script>
   <script>
     $(function() {
       var conn = null;
+      var player_id = {{ escape("'" + player_id + "'" if player_id else 'null') }};
+      var game_id = {{ escape("'" + game_id + "'" if game_id else 'null') }};
+      var game_type = '{{ escape(game_type if game_type else 'blackjack') }}';
 
       function log(msg) {
         var control = $('#log');
@@ -26,6 +29,9 @@
 
         conn.onopen = function() {
           log('Connected.');
+          if(game_id){
+              conn.send('join,' + JSON.stringify([game_type, game_id, player_id]))
+          }
           update_ui();
         };
 
@@ -85,7 +91,7 @@
 </script>
 </head>
 <body>
-<h3>Chat!</h3>
+    <h3>{{ escape(game_id if game_id else 'null') }} {{ escape(player_id if player_id else 'null') }}</h3>
 <div id="protocols" style="float: right">
   <ul>
     <li>
