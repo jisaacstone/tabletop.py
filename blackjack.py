@@ -1,8 +1,6 @@
-from helpers import turn_action
 import turn_based
 import cards
 from random import shuffle
-from turn_based import CONTINUE_TURN, END_TURN
 
 
 def max_under_21(a, b):
@@ -36,20 +34,22 @@ def game():
 
 def init_game(game):
     turn_based.init_game(game)
-    deal_round(game['players'])
+    deal_round(game)
+    init_turn(game, game['whose_turn'])
 
 
-def init_player(player):
-    turn_based.init_player(player)
+def init_player(game, name):
+    player = turn_based.init_player(game, name)
     player.update(hand_value=0,
                   coins=50,
                   bet=5)
     player['public'] += ['coins', 'bet']
+    return player
 
 
 def init_round(game):
     turn_based.init_round(game)
-    dealer_hand = game['public']['dealer_hand']
+    dealer_hand = game['dealer_hand']
     while hand_value(dealer_hand) < 16:
         cards.draw(out_of=game['draw_pile'], into=dealer_hand)
 
@@ -62,39 +62,41 @@ def init_round(game):
         else:
             player['coins'] += player['bet']
         game['draw_pile'] += player['hand']
-        player.hand = []
-        player.hand_value = 0
+        player['hand'] = []
+        player['hand_value'] = 0
 
     deal_round(game)
 
 
-def init_turn(player):
-    turn_based.init_turn(player)
+def init_turn(game, player):
+    turn_based.init_turn(game, player)
     player['hand_value'] = hand_value(player['hand'])
 
 
 def deal_round(game):
     shuffle(game['draw_pile'])
-    cards.deal(out_of=game['draw_pile'], into=game['players'], amount=2)
+    cards.deal(game=game, num_cards=2)
     cards.draw(out_of=game['draw_pile'], into=game['dealer_hand'])
 
 
-@turn_action
-def action_bet(player, amount):
+@turn_based.turn_action
+def action_bet(game, player, amount):
     player['bet'] = amount
-    return CONTINUE_TURN
 
 
-@turn_action
-def action_hit(player):
-    game = player['game']
+@turn_based.turn_action
+def action_hit(game, player):
     cards.draw(out_of=game['draw_pile'], into=player['hand'])
     player['hand_value'] = hand_value(player['hand'])
-    if player['hand_value'] < 21:
-        return CONTINUE_TURN
-    return END_TURN
+    if player['hand_value'] >= 21:
+        return 'end_turn'
 
 
-@turn_action
-def action_stay(player):
-    return END_TURN
+@turn_based.turn_action
+def action_stay(game, player):
+    return 'end_turn'
+
+
+def action_start(game, player):
+    turn_based.action_start(game, player)
+    init_game(game)

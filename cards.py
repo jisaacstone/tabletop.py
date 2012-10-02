@@ -3,7 +3,7 @@ import itertools
 
 
 def card(facing='down'):
-    return dict(type='card', facing=facing)
+    return dict(facing=facing)
 
 
 def poker_card(value, suit=None):
@@ -25,11 +25,12 @@ def poker_deck(jokers=False):
     return deck
 
 
-def deal(game, num_cards='all', into=None, out_of=None):
-    if into is None:
-        into = (p['hand'] for p in game['players'])
-    if out_of is None:
-        out_of = game['draw_pile']
+def deal(game=None, num_cards='all', into=None, out_of=None):
+    if game:
+        if into is None:
+            into = [p['hand'] for p in game['players']]
+        if out_of is None:
+            out_of = game['draw_pile']
     if num_cards == 'all':
         players = itertools.cycle(into)
         while out_of:
