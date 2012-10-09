@@ -1,26 +1,24 @@
+from __future__ import unicode_literals
+from operator import itemgetter
+from random import shuffle
 import turn_based
 import cards
-from random import shuffle
-
-
-def max_under_21(a, b):
-    if a >= b and a < 21:
-        return a
-    return b
 
 
 def hand_value(cards):
-    if not cards:
-        return 0
+    value = sum(aces_as_ones(c) for c in cards)
+    if value <= 11 and any(c['value'] == 'A' for c in cards):
+        value += 10
+    return value
 
-    card = cards[0]
+
+def aces_as_ones(card):
     if card['value'].isdigit():
-        return int(card['value']) + hand_value(cards[1:])
+        return int(card['value'])
     elif card['value'] in ['J', 'Q', 'K']:
-        return 10 + hand_value(cards[1:])
+        return 10
     elif card['value'] == 'A':
-        return max_under_21(11 + hand_value(cards[1:]),
-                            1 + hand_value(cards[1:]))
+        return 1
 
 
 def game():
@@ -47,11 +45,12 @@ def init_player(game, name):
     return player
 
 
-def init_round(game):
-    turn_based.init_round(game)
+def init_round(game, player):
+    turn_based.init_round(game, player)
     dealer_hand = game['dealer_hand']
     while hand_value(dealer_hand) < 16:
         cards.draw(out_of=game['draw_pile'], into=dealer_hand)
+        player['log']()
 
     dhv = hand_value(dealer_hand)
 
@@ -64,13 +63,16 @@ def init_round(game):
         game['draw_pile'] += player['hand']
         player['hand'] = []
         player['hand_value'] = 0
+        player['log']()
 
+    cards.deal(out_of=dealer_hand, into=[game['draw_pile']])
     deal_round(game)
 
 
 def init_turn(game, player):
-    turn_based.init_turn(game, player)
+    result = turn_based.init_turn(game, player)
     player['hand_value'] = hand_value(player['hand'])
+    return result
 
 
 def deal_round(game):

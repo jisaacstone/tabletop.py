@@ -39,6 +39,8 @@ def deal(game=None, num_cards='all', into=None, out_of=None):
         for _ in xrange(num_cards):
             for player in into:
                 draw(into=player, out_of=out_of)
+    if game:
+        [p['log']() for p in game['players']]
 
 
 def draw(into=None, out_of=None):

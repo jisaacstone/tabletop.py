@@ -1,7 +1,7 @@
 import itertools
 from functools import wraps
 from cards import poker_deck
-from game import InvalidAction
+from game import InvalidAction, PerformAction
 
 
 CONTINUE_TURN = False
@@ -16,11 +16,8 @@ def turn_action(action):
 
         result = action(game, player, *args, **kwargs)
         if result == 'end_turn':
-            context = action.func_globals
             next_player = game['turn'].next()
-            context['init_turn'](game, next_player)
-            if next_player == game['starting_player']:
-                context['init_round'](game)
+            result = PerformAction('init_turn', player=next_player)
 
         return result
 
@@ -56,16 +53,18 @@ def init_player(game, name):
     return player
 
 
-def init_round(game):
+def init_round(game, player):
     game['round'] += 1
 
 
 def init_turn(game, player):
     game['whose_turn'] = player
     game['current_player'] = player['name']
+    if game['whose_turn'] == game['starting_player']:
+        return PerformAction('init_round')
 
 
 def action_start(game, player):
     if game['status'] != 'waiting':
-        raise InvailidAction('cannot start game!')
+        raise InvalidAction('cannot start game!')
     game['status'] = 'active'
