@@ -6,7 +6,7 @@ import tornado.ioloop
 import tornado.web
 
 import sockjs.tornado
-from game import PlayerConnection
+from tabletop.game import PlayerConnection
 
 
 class IndexHandler(tornado.web.RequestHandler):
@@ -18,7 +18,7 @@ class IndexHandler(tornado.web.RequestHandler):
         self.render('index.html', **kwargs)
 
 
-if __name__ == "__main__":
+def runserver():
     import logging
     logging.getLogger().setLevel(logging.DEBUG)
 

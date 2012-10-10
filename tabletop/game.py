@@ -113,7 +113,7 @@ class PlayerConnection(SockJSConnection):
         self.player_disconnected()
 
     def invalid_action(self, action):
-        self.send("Invailid action {0} by player {1}".format(
+        self.send("error,Invailid action {0} by player {1}".format(
             action, self))
 
     def perform_action(self, action, data=None, player=None, module=None):
@@ -184,7 +184,7 @@ class PlayerConnection(SockJSConnection):
             if (old_vars['game'].get(k, None)
                     != new_vars['game'].get(k, None)):
                 self.broadcast(self.room['in_room'],
-                        json.dumps({'var_type': 'game',
+                        'update,' + json.dumps({'var_type': 'game',
                             'key': k,
                             'value': self.game.get(k, None)}))
 
@@ -194,7 +194,7 @@ class PlayerConnection(SockJSConnection):
                 player_id, key = k
                 value = self.room['players'][player_id].vars.get(key, None)
                 self.broadcast(self.room['in_room'],
-                    json.dumps({'var_type': 'player',
+                    'update,' + json.dumps({'var_type': 'player',
                         'player': player_id,
                         'key': key,
                         'value': value}))
@@ -202,6 +202,6 @@ class PlayerConnection(SockJSConnection):
         for k in player:
             if (old_vars['player'].get(k, None)
                     != new_vars['player'].get(k, None)):
-                self.send(json.dumps({'var_type': 'private',
+                self.send('update,' + json.dumps({'var_type': 'private',
                     'key': k,
                     'value': self.vars.get(k, None)}))

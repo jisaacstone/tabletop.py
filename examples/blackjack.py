@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 from operator import itemgetter
 from random import shuffle
-import turn_based
-import cards
+from tabletop import turn_based
+from tabletop import cards
+from tabletop import server
 
 
 def hand_value(cards):
@@ -102,3 +103,7 @@ def action_stay(game, player):
 def action_start(game, player):
     turn_based.action_start(game, player)
     init_game(game)
+
+
+if __name__ == '__main__':
+    server.runserver()
