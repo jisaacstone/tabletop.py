@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import os
 from operator import itemgetter
 from random import shuffle
 from tabletop import turn_based
@@ -106,4 +107,6 @@ def action_start(game, player):
 
 
 if __name__ == '__main__':
-    server.runserver()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    server.runserver(index_file=os.path.join(base_dir, 'static/index.html'),
+                     static_path=os.path.join(base_dir, 'static'))

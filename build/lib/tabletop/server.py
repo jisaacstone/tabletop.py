@@ -11,14 +11,17 @@ from tabletop.game import PlayerConnection
 
 class IndexHandler(tornado.web.RequestHandler):
     """Regular HTTP handler to serve the chatroom page"""
+    def initialize(self, index_file):
+        self.index_file = index_file
+
     def get(self, **kwargs):
         kwargs['game_type'] = kwargs.get('game_type', 'blackjack')
         kwargs['game_id'] = kwargs.get('game_id', None)
         kwargs['player_id'] = kwargs.get('player_id', None)
-        self.render('index.html', **kwargs)
+        self.render(self.index_file, **kwargs)
 
 
-def runserver():
+def runserver(index_file, static_path='/static'):
     import logging
     logging.getLogger().setLevel(logging.DEBUG)
 
@@ -27,9 +30,11 @@ def runserver():
 
     # 2. Create Tornado application
     app = tornado.web.Application(
-        [(r"/", IndexHandler),
+        [(r"/", IndexHandler, {'index_file': index_file}),
          (r"/g/(?P<game_type>[^/]+)?/?(?P<game_id>[^/]+)?/?(?P<player_id>.+)?",
-             IndexHandler),
+             IndexHandler, {'index_file': index_file}),
+         (r"/static/(.*)", tornado.web.StaticFileHandler,
+             {'path': static_path}),
          ] + GameRouter.urls
     )
 
