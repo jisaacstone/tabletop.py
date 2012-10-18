@@ -3,7 +3,12 @@
 <head>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
   <script src="http://cdn.sockjs.org/sockjs-0.3.js"></script>
-  <script src="static/client-connection.js"></script>
+  <script src="/static/client-connection.js"></script>
+  <script type="text/javascript">
+      {% for key, value in args.items() %}
+        var {% raw key %} = {% raw value %};
+      {% end %}
+  </script>
 </head>
 <body>
     <ul id='hud'>

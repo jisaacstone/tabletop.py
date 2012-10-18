@@ -2,6 +2,7 @@
 """
     Simple sockjs-tornado chat application. By default will listen on port 8080
 """
+import json
 import tornado.ioloop
 import tornado.web
 
@@ -15,10 +16,8 @@ class IndexHandler(tornado.web.RequestHandler):
         self.index_file = index_file
 
     def get(self, **kwargs):
-        kwargs['game_type'] = kwargs.get('game_type', 'blackjack')
-        kwargs['game_id'] = kwargs.get('game_id', None)
-        kwargs['player_id'] = kwargs.get('player_id', None)
-        self.render(self.index_file, **kwargs)
+        kwargs = dict((k, json.dumps(v)) for k, v in kwargs.items())
+        self.render(self.index_file, args=kwargs)
 
 
 def runserver(index_file, static_path='/static'):

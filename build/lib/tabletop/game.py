@@ -84,7 +84,7 @@ class PlayerConnection(SockJSConnection):
 
     def on_open(self, info):
         self.in_lobby.add(self)
-        self.send(json.dumps(self.rooms.keys()))
+        self.send(json.dumps(['name', self.name]))
 
     def on_message(self, message):
         if "," in message:
@@ -113,8 +113,8 @@ class PlayerConnection(SockJSConnection):
         self.player_disconnected()
 
     def invalid_action(self, action):
-        self.send("error,Invailid action {0} by player {1}".format(
-            action, self))
+        self.send(json.dumps(["error",
+            "Invailid action {0} by player {1}".format(action, self)]))
 
     def perform_action(self, action, data=None, player=None, module=None):
         if module is None:
@@ -152,17 +152,23 @@ class PlayerConnection(SockJSConnection):
             self.game = self.game_module.game()
             self.room = new_room(self.game)
             self.rooms[id(self.game)] = self.room
-            self.broadcast(self.in_lobby, 'new_room,{0}'.format(id(self.game)))
+            self.broadcast(self.in_lobby, json.dumps['new_room', id(self.game)])
         else:
             self.room = self.rooms[game_id]
             self.game = self.room['game']
 
         self.in_lobby.discard(self)
         self.room['in_room'].add(self)
-        if player_id is 0:
+        self.send(json.dumps(['game_id', id(self.game)]))
+        if player_id is -1:
             self.vars = self.game_module.init_player(self.game, self.name)
             self.vars['log'] = makelog(self)
             self.room['players'][id(self.vars)] = self
+        elif player_id:
+            pass  # Game restore logic goes here
+        else:
+            return
+
         self.log_var_changes(empty_game, self.vars)
 
     def player_disconnected(self):
@@ -183,25 +189,26 @@ class PlayerConnection(SockJSConnection):
         for k in game:
             if (old_vars['game'].get(k, None)
                     != new_vars['game'].get(k, None)):
-                self.broadcast(self.room['in_room'],
-                        'update,' + json.dumps({'var_type': 'game',
-                            'key': k,
-                            'value': self.game.get(k, None)}))
+                self.broadcast(self.room['in_room'], json.dumps(['update', {
+                    'var_type': 'game',
+                    'key': k,
+                    'value': self.game.get(k, None)}]))
 
         for k in players:
             if (old_vars['players'].get(k, None)
                     != new_vars['players'].get(k, None)):
                 player_id, key = k
                 value = self.room['players'][player_id].vars.get(key, None)
-                self.broadcast(self.room['in_room'],
-                    'update,' + json.dumps({'var_type': 'player',
-                        'player': player_id,
-                        'key': key,
-                        'value': value}))
+                self.broadcast(self.room['in_room'], json.dumps(['update', {
+                    'var_type': 'player',
+                    'player': player_id,
+                    'key': key,
+                    'value': value}]))
 
         for k in player:
             if (old_vars['player'].get(k, None)
                     != new_vars['player'].get(k, None)):
-                self.send('update,' + json.dumps({'var_type': 'private',
+                self.send(json.dumps(['update', {
+                    'var_type': 'private',
                     'key': k,
-                    'value': self.vars.get(k, None)}))
+                    'value': self.vars.get(k, None)}]))
