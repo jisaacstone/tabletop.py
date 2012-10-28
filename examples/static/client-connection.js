@@ -1,8 +1,9 @@
 $(function() {
   var conn = null;
-  var player_id = null;
-  var game_id = null;
-  var game_type = null;
+  var playerId = null;
+  var gameId = null;
+  var gameType = null;
+  window.messageHandler = simpleHandler();
 
   function log(msg) {
     var control = $('#log');
@@ -23,7 +24,7 @@ $(function() {
 
     conn.onopen = function() {
       log('Connected.');
-      if(game_id){
+      if(gameId) {
           conn.send('join,' + JSON.stringify([game_type, game_id, player_id]))
       }
       update_ui();
@@ -31,12 +32,8 @@ $(function() {
 
     conn.onmessage = function(e) {
       log('Received: ' + e.data);
-      comma = e.data.indexOf(',')
-      if(comma !== -1){
-          messageType = e.data.sice(0, comma)
-          messageData = e.data.slice(comma + 1)
-          log(messageType)
-      }
+      var message = JSON.parse(e.data)
+      handleMessage(message[0], message[1])
     };
 
     conn.onclose = function() {
@@ -87,4 +84,35 @@ $(function() {
     $('#text').val('').focus();
     return false;
   });
+
 });
+
+function handleMessage(action, data) {
+    return window.messageHandler[action](data);
+}
+
+function simpleHandler() {
+    return {
+        'set': function(data) {
+            $('.' + data['element']).attr(data['attr'], data['value']);
+        },
+        'setText': function(data) {
+            $('#' + data[0]).html(data[1]);
+        },
+        'pushState': function(data) {
+            $('#' + data[0]).html(data[1]);
+            push(data[0], data[1]);
+        }
+    };
+}
+
+function push(variable, value) {
+    var url = '/g/';
+    window[variable] = value;
+    for each (var v in [gameType, gameId, playerId]) {
+        if(v !== null) {
+            url += v + '/';
+        }
+    }
+    window.history.pushState({variable: value}, '', url);
+}

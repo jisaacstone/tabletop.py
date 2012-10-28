@@ -30,7 +30,7 @@ def runserver(index_file, static_path='/static'):
     # 2. Create Tornado application
     app = tornado.web.Application(
         [(r"/", IndexHandler, {'index_file': index_file}),
-         (r"/g/(?P<game_type>[^/]+)?/?(?P<game_id>[^/]+)?/?(?P<player_id>.+)?",
+         (r"/g/(?P<gameType>[^/]+)?/?(?P<gameId>[^/]+)?/?(?P<playerId>.+)?",
              IndexHandler, {'index_file': index_file}),
          (r"/static/(.*)", tornado.web.StaticFileHandler,
              {'path': static_path}),

@@ -84,7 +84,7 @@ class PlayerConnection(SockJSConnection):
 
     def on_open(self, info):
         self.in_lobby.add(self)
-        self.send(json.dumps(['name', self.name]))
+        self.send(json.dumps(['setText', ['name', self.name]]))
 
     def on_message(self, message):
         if "," in message:
@@ -148,18 +148,20 @@ class PlayerConnection(SockJSConnection):
 
     def action_join(self, game_type='blackjack', game_id=0, player_id=0):
         self.game_module = __import__(game_type)
+        self.send(json.dumps(['pushState', ['gameType', game_type]]))
         if game_id is 0 or game_id not in self.rooms:
             self.game = self.game_module.game()
             self.room = new_room(self.game)
             self.rooms[id(self.game)] = self.room
-            self.broadcast(self.in_lobby, json.dumps['new_room', id(self.game)])
+            self.broadcast(self.in_lobby,
+                           json.dumps(['new_room', id(self.game)]))
         else:
             self.room = self.rooms[game_id]
             self.game = self.room['game']
 
         self.in_lobby.discard(self)
         self.room['in_room'].add(self)
-        self.send(json.dumps(['game_id', id(self.game)]))
+        self.send(json.dumps(['pushState', ['gameId', id(self.game)]]))
         if player_id is -1:
             self.vars = self.game_module.init_player(self.game, self.name)
             self.vars['log'] = makelog(self)
