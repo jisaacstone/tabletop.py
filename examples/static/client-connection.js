@@ -102,6 +102,14 @@ function simpleHandler() {
         'pushState': function(data) {
             $('#' + data[0]).html(data[1]);
             push(data[0], data[1]);
+        },
+        'update': function(data) {
+            var selector = '#' + data['varType'];
+            if(data['player'] & data['player'] != playerId) {
+                selector += ' .' + data['player'];
+            }
+            selector += ' .' + data['key'];
+            $(selector).html(objToHtml(data['value']));
         }
     };
 }
@@ -116,3 +124,20 @@ function push(variable, value) {
     }
     window.history.pushState({variable: value}, '', url);
 }
+
+function objToHtml(obj) {
+    switch(typeof(obj)) {
+        case "string":
+        case "number":
+            return obj;
+        case "object":
+            var html = '';
+            for(var key in obj) {
+                html += '<span class="' + key + '">' +
+                    objTpHtml(obj[key]) +
+                    '</span>\n'; 
+            }
+            return html;
+    }
+}
+

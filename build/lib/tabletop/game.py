@@ -166,6 +166,7 @@ class PlayerConnection(SockJSConnection):
             self.vars = self.game_module.init_player(self.game, self.name)
             self.vars['log'] = makelog(self)
             self.room['players'][id(self.vars)] = self
+            self.send(['pushState', ['playerId', id(self.vars)]])
         elif player_id:
             pass  # Game restore logic goes here
         else:
@@ -192,7 +193,7 @@ class PlayerConnection(SockJSConnection):
             if (old_vars['game'].get(k, None)
                     != new_vars['game'].get(k, None)):
                 self.broadcast(self.room['in_room'], json.dumps(['update', {
-                    'var_type': 'game',
+                    'varType': 'game',
                     'key': k,
                     'value': self.game.get(k, None)}]))
 
@@ -202,7 +203,7 @@ class PlayerConnection(SockJSConnection):
                 player_id, key = k
                 value = self.room['players'][player_id].vars.get(key, None)
                 self.broadcast(self.room['in_room'], json.dumps(['update', {
-                    'var_type': 'player',
+                    'varType': 'player',
                     'player': player_id,
                     'key': key,
                     'value': value}]))
@@ -211,6 +212,6 @@ class PlayerConnection(SockJSConnection):
             if (old_vars['player'].get(k, None)
                     != new_vars['player'].get(k, None)):
                 self.send(json.dumps(['update', {
-                    'var_type': 'private',
+                    'varType': 'private',
                     'key': k,
                     'value': self.vars.get(k, None)}]))
