@@ -77,6 +77,7 @@ class PlayerConnection(SockJSConnection):
 
     def __init__(self, session):
         self.name = name_gen()
+        self.vars = dict(name=self.name, public=['name'])
         super(PlayerConnection, self).__init__(session)
 
     def __repr__(self):
@@ -166,7 +167,7 @@ class PlayerConnection(SockJSConnection):
             self.vars = self.game_module.init_player(self.game, self.name)
             self.vars['log'] = makelog(self)
             self.room['players'][id(self.vars)] = self
-            self.send(['pushState', ['playerId', id(self.vars)]])
+            self.send(json.dumps(['pushState', ['playerId', id(self.vars)]]))
         elif player_id:
             pass  # Game restore logic goes here
         else:

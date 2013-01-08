@@ -109,6 +109,7 @@ function simpleHandler() {
                 selector += ' .' + data['player'];
             }
             selector += ' .' + data['key'];
+            console.log('selector: ' + selector);
             $(selector).html(objToHtml(data['value']));
         }
     };
