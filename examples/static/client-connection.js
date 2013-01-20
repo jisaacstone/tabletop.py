@@ -1,90 +1,97 @@
 $(function() {
-  var conn = null;
-  var playerId = null;
-  var gameId = null;
-  var gameType = null;
-  window.messageHandler = simpleHandler();
+    var conn = conn || null;
+    window.messageHandler = simpleHandler();
 
-  function log(msg) {
-    var control = $('#log');
-    control.html(control.html() + msg + '<br/>');
-    control.scrollTop(control.scrollTop() + 1000);
-  }
-
-  function connect() {
-    disconnect();
-
-    var transports = $('#protocols input:checked').map(function(){
-        return $(this).attr('id');
-    }).get();
-
-    conn = new SockJS('http://' + window.location.host + '/game', transports);
-
-    log('Connecting...');
-
-    conn.onopen = function() {
-      log('Connected.');
-      if(gameId) {
-          conn.send('join,' + JSON.stringify([game_type, game_id, player_id]))
-      }
-      update_ui();
-    };
-
-    conn.onmessage = function(e) {
-      log('Received: ' + e.data);
-      var message = JSON.parse(e.data)
-      handleMessage(message[0], message[1])
-    };
-
-    conn.onclose = function() {
-      log('Disconnected.');
-      conn = null;
-      update_ui();
-    };
-  }
-
-  function disconnect() {
-    if (conn != null) {
-      log('Disconnecting...');
-
-      conn.close();
-      conn = null;
-
-      update_ui();
-    }
-  }
-
-  function update_ui() {
-    var msg = '';
-
-    if (conn == null || conn.readyState != SockJS.OPEN) {
-      $('#status').text('disconnected');
-      $('#connect').text('Connect');
-    } else {
-      $('#status').text('connected (' + conn.protocol + ')');
-      $('#connect').text('Disconnect');
-    }
-  }
-
-  $('#connect').click(function() {
-    if (conn == null) {
-      connect();
-    } else {
-      disconnect();
+    function log(msg) {
+        var control = $('#log');
+        control.html(control.html() + msg + '<br/>');
+        control.scrollTop(control.scrollTop() + 1000);
     }
 
-    update_ui();
-    return false;
-  });
+    function update_ui() {
+        var msg = '';
 
-  $('form').submit(function() {
-    var text = $('#text').val();
-    log('Sending: ' + text);
-    conn.send(text);
-    $('#text').val('').focus();
-    return false;
-  });
+        if (window.conn == null || window.conn.readyState != SockJS.OPEN) {
+          $('#status').text('disconnected');
+          $('#connect').text('Connect');
+        } else {
+          $('#status').text('connected (' + window.conn.protocol + ')');
+          $('#connect').text('Disconnect');
+        }
+    }
 
+
+    function connect(callback) {
+        callback = callback || function() {};
+        disconnect();
+
+        var transports = $('#protocols input:checked').map(function(){
+            return $(this).attr('id');
+        }).get();
+
+        window.conn = new SockJS('http://' + window.location.host + '/game', transports);
+
+        log('Connecting...');
+
+        window.conn.onopen = function() {
+          log('Connected.');
+          update_ui();
+          callback();
+        };
+
+        window.conn.onmessage = function(e) {
+          log('Received: ' + e.data);
+          var message = JSON.parse(e.data)
+          handleMessage(message[0], message[1])
+        };
+
+        window.conn.onclose = function() {
+          log('Disconnected.');
+          window.conn = null;
+          update_ui();
+        };
+    }
+
+    function disconnect() {
+        if (window.conn != null) {
+          log('Disconnecting...');
+
+          window.conn.close();
+          window.conn = null;
+
+          update_ui();
+        }
+    }
+
+    $('#connect').click(function() {
+        if (window.conn == null) {
+          connect();
+        } else {
+          disconnect();
+        }
+
+        update_ui();
+        return false;
+    });
+
+    $('form').submit(function() {
+        var text = $('#text').val();
+        log('Sending: ' + text);
+        window.conn.send(text);
+        $('#text').val('').focus();
+        return false;
+    });
+
+    function onConnect(){
+        if(gameId !== null) {
+            var pid = (playerId === null ? -1 : playerId)
+            var text = 'join,' + JSON.stringify({'game_id':gameId, 'player_id':pid});
+            console.log(text);
+            window.conn.send(text);
+        }
+        console.log('no game');
+    }
+    connect(onConnect);
 });
 
 function handleMessage(action, data) {
