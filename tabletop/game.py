@@ -186,8 +186,8 @@ class PlayerConnection(SockJSConnection):
 
     def log_var_changes(self, old_vars, player):
         new_vars = self.copy_vars(player)
-        game = set(old_vars['game']) | set(new_vars['game'])
-        player = set(old_vars['player']) | set(new_vars['player'])
+        game = (set(old_vars['game']) | set(new_vars['game'])) - set(['public'])
+        player = (set(old_vars['player']) | set(new_vars['player'])) - set(['public'])
         players = set(old_vars['players']) | set(new_vars['players'])
 
         for k in game:

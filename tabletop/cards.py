@@ -2,13 +2,8 @@ from random import shuffle
 import itertools
 
 
-def card(facing='down'):
-    return dict(facing=facing)
-
-
 def poker_card(value, suit=None):
-    c = card()
-    c.update(dict(value=value, suit=suit))
+    c = dict(value=value, suit=suit)
     return c
 
 
