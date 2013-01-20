@@ -130,7 +130,7 @@ function push(variable, value) {
 function objToHtml(k, obj) {
     var ul = $(document.createElement('ul')).addClass(k);
     if(typeof(k) == "string") {
-        ul.append($('<li>').addClass('title').html(k));
+        ul.append($('<li>').addClass('title').html(k.replace('_', ' ')));
     }
     switch(typeof(obj)) {
         case "string":
