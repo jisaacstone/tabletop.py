@@ -104,13 +104,14 @@ function simpleHandler() {
             push(data[0], data[1]);
         },
         'update': function(data) {
-            var selector = '#' + data['varType'];
+            var path = [data['varType']];
             if(data['player'] & data['player'] != playerId) {
-                selector += ' .' + data['player'];
+                 path.push(data['player']);
             }
-            selector += ' .' + data['key'];
+            path.push(data['key']);
+            selector = createOrSelect(path);
             console.log('selector: ' + selector);
-            $(selector).html(objToHtml(data['value']));
+            $(selector).replaceWith(objToHtml(data['key'], data['value']));
         }
     };
 }
@@ -126,19 +127,35 @@ function push(variable, value) {
     window.history.pushState({variable: value}, '', url);
 }
 
-function objToHtml(obj) {
+function objToHtml(k, obj) {
+    var ul = $(document.createElement('ul')).addClass(k);
+    if(typeof(k) == "string") {
+        ul.append($('<li>').addClass('title').html(k));
+    }
     switch(typeof(obj)) {
         case "string":
         case "number":
-            return obj;
+            ul.attr('data-' + k, obj);
+            ul.append($('<li>').addClass('value').html(obj));
+            break;
         case "object":
-            var html = '';
             for(var key in obj) {
-                html += '<span class="' + key + '">' +
-                    objTpHtml(obj[key]) +
-                    '</span>\n'; 
+                ul.attr('data-' + key, obj[key]);
+                ul.append($('<li>').addClass('value').append(objToHtml(key, obj[key]))); 
             }
-            return html;
+            break;
     }
+    return ul;
 }
 
+function createOrSelect(path) {
+    selector = '#' + path.shift();
+    while(path.length) {
+        next = path.shift();
+        if( ! $(selector).children('.' + next).length) {
+            $(selector).append('<span class="' + next + '"></span>');
+        }
+        selector += ' .' + next;
+    }
+    return selector;
+} 
