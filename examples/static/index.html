@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link href="/static/style.css" rel="stylesheet">
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
   <script src="http://cdn.sockjs.org/sockjs-0.3.js"></script>
   <script src="/static/client-connection.js"></script>
@@ -25,7 +26,7 @@
     </div>
     <div id="private">
     </div>
-<div id="protocols" style="float: right">
+<div id="protocols" style="float: right; display: none;">
   <ul>
     <li>
       <input id="websocket" type="checkbox" value="websocket" checked="checked"></input>
@@ -61,7 +62,7 @@
 <div>
   <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
 </div>
-<div id="log" style="width: 60em; height: 20em; overflow:auto; border: 1px solid black">
+<div id="log" style="width: 60em; height: 10em; overflow:auto; border: 1px solid black">
 </div>
 <form id="chatform">
   <input id="text" type="text" />

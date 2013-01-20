@@ -1,0 +1,35 @@
+
+div {
+    clear: left;
+}
+#game ul {
+    float: left;
+}
+#player {
+    clear: left;
+}
+li {
+    display: inline;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    margin: 0;
+}
+.hand {
+    display: block;
+    width: 100%;
+}
+.hand li {
+    float: left;
+}
+.hand .title {
+    display: none;
+}
+[data-suit="hearts"], [data-suit="diamonds"] {
+    color: #EF2343;
+}
+[data-suit="clubs"], [dta-suit="spades"] {
+    color:  #234545;
+}
+[data-suit] {
+    font-weight: bold;
+}
